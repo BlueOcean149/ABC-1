@@ -56,6 +56,7 @@ summary(validation)
 str(validation)
 dim(validation)
 
+##Testing
 edx %>% separate_rows(genres, sep = "\\I")%>%
 group_by(genres) %>%
 summarize(count = n()) %>%
