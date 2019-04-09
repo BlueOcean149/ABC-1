@@ -1,3 +1,4 @@
+##Download Dataset
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
 if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
@@ -20,6 +21,7 @@ removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
 
+##Data
 set.seed(1)
 train_index <- createDataPartition(y = edx$rating, times = 1, p = 0.8, list = FALSE)
 train_set <- edx[train_index,]
