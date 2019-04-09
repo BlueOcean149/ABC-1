@@ -1,2 +1,2 @@
-Medical Emergencies: AIrway, Breathing, and Circulation
-https://www.coursera.org/learn/medical-emergencies-airway-breathing-circulation
+Become an EMT Specialization
+https://www.coursera.org/specializations/become-an-emt
