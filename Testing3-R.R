@@ -19,25 +19,7 @@ semi_join(edx, by = "userId")
 removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
-Loading required package: tidyverse
-Warning message:
-"package 'tidyverse' was built under R version 3.5.2"-- Attaching packages --------------------------------
-------- tidyverse 1.2.1 --
-v ggplot2 3.1.0 v purrr 0.3.0
-v tibble 2.0.1 v dplyr 0.8.0.1
-v tidyr 0.8.3 v stringr 1.4.0
-v readr 1.3.1 v forcats 0.3.0
-Warning message:
-"package 'ggplot2' was built under R version 3.5.2"Warning message:
-"package 'tibble' was built under R version 3.5.2"Warning message:
-"package 'tidyr' was built under R version 3.5.2"Warning message:
-"package 'readr' was built under R version 3.5.2"Warning message:
-"package 'purrr' was built under R version 3.5.2"Warning message:
-"package 'dplyr' was built under R version 3.5.2"Warning message:
-"package 'stringr' was built under R version 3.5.2"Warning message:
-"package 'forcats' was built under R version 3.5.2"-- Conflicts ------------------------------------------
-tidyverse_conflicts() --
-x dplyr::filter() masks stats::filter()
+
 set.seed(1)
 train_index <- createDataPartition(y = edx$rating, times = 1, p = 0.8, list = FALSE)
 train_set <- edx[train_index,]
