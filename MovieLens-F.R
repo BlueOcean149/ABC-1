@@ -32,7 +32,7 @@ removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
 
-###Training and Testing dataset
+##Training and Testing dataset
 set.seed(1)
 train_index <- createDataPartition(y = edx$rating, times = 1, p = 0.8, list = FALSE)
 train_set <- edx[train_index,]
@@ -109,14 +109,14 @@ RMSE <- function(true_ratings, predicted_ratings){
 sqrt(mean((true_ratings - predicted_ratings)^2))
 }
 
-###1st model: Simple Average Model 
+##1st model: Simple Average Model 
 
 mu_hat <- mean(train_set$rating)
 model_1_rmse <- RMSE(test_set$rating, mu_hat)
 rmse_results <- data_frame(Model = "Simple Average", RMSE = model_1_rmse)
 rmse_results%>%knitr::kable()
 
-###2nd model: Movie_Effect Model 
+##2nd model: Movie_Effect Model 
 
 mu <- mean(train_set$rating)
 movie_avgs <- train_set %>%
@@ -134,7 +134,7 @@ data_frame(Model="Movie_Effect",
 RMSE = model_2_rmse ))
 rmse_results %>% knitr::kable()
 
-###3rd model: Movie+User_Effect Model 
+##3rd model: Movie+User_Effect Model 
 
 train_set %>%
 group_by(userId) %>%
