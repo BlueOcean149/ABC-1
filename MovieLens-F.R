@@ -1,6 +1,6 @@
 ##HarvardX: PH125.9x Data Science 
 ##MovieLens Rating Preduction Project
-##April 10. 2019
+##April 10, 2019
 ##Philip K W Ng
 
 ##I. Introduction
@@ -174,3 +174,6 @@ model_rmse_validation <- RMSE(predicted_ratings, validation$rating)
 model_rmse_validation
 
 ##VIII. Conclusion
+
+
+##THANK YOU FOR REVIEWING!!
