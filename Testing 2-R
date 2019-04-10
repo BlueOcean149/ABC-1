@@ -1,8 +1,8 @@
 output:
 #HarvardX: PH125.9x Data Science 
 #MovieLens Rating Preduction Project
-#April 2019
-#Philip K W Ng
+#April 10, 2019
+#Philip Ng
 
 ##I. Introduction
 
@@ -210,3 +210,5 @@ model_rmse_validation
 ```
 
 ##VIII. Conclusion
+
+##THANKS FOR REVIEWING!
