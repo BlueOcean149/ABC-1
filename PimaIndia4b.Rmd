@@ -1,0 +1,191 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r,echo=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(caTools)) install.packages("caTools", repos = "http://cran.us.r-project.org")
+if(!require(klaR)) install.packages("klaR", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
+if(!require(broom)) install.packages("broom", repos = "http://cran.us.r-project.org")
+if(!require(MASS)) install.packages("MASS", repos = "http://cran.us.r-project.org")
+if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(caret)
+library(ggplot2)
+library(caTools)
+library(klaR)
+library(data.table)
+library(dplyr)
+library(broom)
+library(MASS)
+library(corrplot)
+
+theme_set(theme_classic())
+```
+
+```{r}
+data("PimaIndiansDiabetes2", package = "mlbench")
+PimaIndiansDiabetes2 <- na.omit(PimaIndiansDiabetes2)
+model <- glm(diabetes ~., data = PimaIndiansDiabetes2,
+             family = binomial)
+probabilities <- predict(model, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
+head(predicted.classes)
+```
+
+```{r}
+mydata <- PimaIndiansDiabetes2 %>%
+  dplyr::select_if(is.numeric)
+predictors <- colnames(mydata)
+```
+
+```{r}
+#Dim
+dim(mydata)
+#Summary
+summary(mydata)
+#Str
+str(mydata)
+```
+
+```{r}
+#Barplots
+par(mfrow=c(2,4))
+for(i in 1:8) {
+  counts <- table(mydata[,i])
+  name <- names(mydata)[i]
+  barplot(counts, main=name)
+}
+
+```
+
+```{r}
+correlations <- cor(mydata[,1:8])
+corrplot(correlations, method="circle")
+corrplot(correlations, method="pie")
+corrplot(correlations, method="square")
+corrplot(correlations, method="number")
+```
+
+```{r}
+#Scatter plot
+pairs(mydata)
+```
+
+```{r}
+mydata <- mydata %>%
+  mutate(logit = log(probabilities/(1-probabilities))) %>%
+  gather(key = "predictors", value = "predictor.value", -logit)
+ggplot(mydata, aes(logit, predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") +
+  theme_bw() +
+  facet_wrap(~predictors, scales = "free_y")
+```
+
+##
+Cook’s distance is used to examine the extreme values in the data. Below is the top 3 largest values.
+```{r}
+plot(model, which = 4, id.n = 3)
+```
+
+
+##
+Further details of the top 3 largest values are shown as follow:
+
+```{r}
+model.data <- augment(model) %>%
+  mutate(index = 1:n())
+model.data %>% top_n(3, .cooksd)
+```
+
+##
+Although influential values (extreme values) may alter the quality of the logistic regression model, not all outliers are influential observations. To check if the data contains potential influential observations, the standardized residual error can be inspected. The standardized residuals are plotted as below.
+
+```{r}
+ggplot(model.data, aes(index, .std.resid)) +
+  geom_point(aes(color = diabetes), alpha = .5) +
+  theme_bw()
+
+```
+
+##
+The filter below is used to identify influential data points with abs (.std.res) > 3. The result shows that there is no influential observations in the data.
+
+```{r}
+model.data %>%
+  filter(abs(.std.resid) > 3)
+car::vif(model)
+```
+
+```{r}
+pima.data <- na.omit(PimaIndiansDiabetes2)
+# Inspect the data
+sample_n(pima.data, 3)
+# Split the data into training and test set
+set.seed(123)
+training.samples <- pima.data$diabetes %>%
+  createDataPartition(p=0.8, list=FALSE)
+train.data <- pima.data[training.samples, ]
+test.data <- pima.data[-training.samples, ]
+```
+
+```{r}
+# Fit LDA
+fit <- lda(diabetes ~., data = train.data)
+# Make predictions on the test data
+predictions <- predict(fit, test.data)
+prediction.probabilities <- predictions$posterior[,2]
+predicted.classes <- predictions$class
+observed.classes <- test.data$diabetes
+```
+
+```{r}
+accuracy <- mean(observed.classes == predicted.classes)
+accuracy
+```
+
+```{r}
+accuracy <- mean(observed.classes == predicted.classes)
+accuracy
+
+error <- mean(observed.classes != predicted.classes)
+error
+
+```
+
+```{r}
+# Confusion matrix, number of cases
+table(observed.classes, predicted.classes)
+
+# Confusion matrix, proportion of cases
+table(observed.classes, predicted.classes) %>%
+  prop.table() %>% round(digits = 3)
+```
+
+```{r}
+confusionMatrix(predicted.classes, observed.classes,
+                positive = "pos")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
