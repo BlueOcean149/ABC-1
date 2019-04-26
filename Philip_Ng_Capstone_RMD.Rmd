@@ -1,0 +1,264 @@
+---
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+# HarvardX: PH125.9x Data Science
+
+## Capstone Project: Predict Diabetes Positiveness Using LDA Model
+
+### April 26, 2019
+
+#### Philip K W Ng
+
+
+## I. Executive Summary
+
+This project will build a **linear discriminant analysis model** (“LDA model”) using the PimaIndiansDiabetes2 dataset to predict the probability of being diabetes positive based on multiple clinical variables.  
+
+The following steps are followed to perform the analysis and make the conclusion:
+
+- Download R Package
+- Summarize Dataset
+- Analyze Dataset
+- Build LDA Model
+- Make Prediction
+- Examine Prediction Accuracy
+
+The PimaIndiansDiabetes2 dataset available in the mlbench package is used for this project. The dataset covers eight clinical variables from 392 female individuals, and is commonly used for binary classification case study, where the outcome variable can have only two possible values: negative or positive.
+
+After summarizing the dataset, “logistic regression” is used to analyze the relationship between the variables. Then, a linear discriminant analysis model ("LDA") is built to predict the probability of being diabetes positive based on multiple clinical variables. Finally, the “confusion matrix” is used to examine how many observations are correctly or incorrectly classified. 
+
+As the LDA model correctly predicts the individual outcome in **86.6%** of the cases, and the misclassification error rate (Type I Error and Type II Error) is low at **13.4%**. Furthermore, both the Sensitivity (True Positive Rate) and the Specificity (True Negative Rate) of the model are high at **75%** and **92.3%**, respectively. Therefore, it is concluded that this LDA model is likely a reliable prediction model for the PimaIndiansDiabetes2 dataset.
+
+Details of the analysis will be explained in the subsequent sections.
+
+## II. Download R Package 
+
+The following R Packages are downloaded for the analysis in the project: tidyverse, caret, ggplot2, caTools, kLaR, data.table, dplyr, broom, MASS, corrplot.
+
+```{r,echo=FALSE}
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(caTools)) install.packages("caTools", repos = "http://cran.us.r-project.org")
+if(!require(klaR)) install.packages("klaR", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
+if(!require(broom)) install.packages("broom", repos = "http://cran.us.r-project.org")
+if(!require(MASS)) install.packages("MASS", repos = "http://cran.us.r-project.org")
+if(!require(corrplot)) install.packages("corrplot", repos = "http://cran.us.r-project.org")
+```
+
+```{r,echo=FALSE}
+library(tidyverse)
+library(caret)
+library(ggplot2)
+library(caTools)
+library(klaR)
+library(data.table)
+library(dplyr)
+library(broom)
+library(MASS)
+library(corrplot)
+theme_set(theme_classic())
+```
+
+## III. Summarize Dataset 
+
+The PimaIndiansDiabetes2 data is downloaded for the analysis in this project.
+
+```{r}
+data("PimaIndiansDiabetes2", package = "mlbench")
+PimaIndiansDiabetes2 <- na.omit(PimaIndiansDiabetes2)
+model <- glm(diabetes ~., data = PimaIndiansDiabetes2,
+             family = binomial)
+probabilities <- predict(model, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
+```
+
+```{r}
+mydata <- PimaIndiansDiabetes2 %>%
+  dplyr::select_if(is.numeric)
+predictors <- colnames(mydata)
+```
+
+The following ways are used to look at the raw data from different perspectives: shape, size, type, general layout. Inspecting data helps build up intuition and identify questions for the dataset.
+
+```{r}
+dim(mydata)
+
+summary(mydata)
+
+str(mydata)
+```
+
+## IV. Analyze Dataset
+
+Data visualization is perhaps the fastest and most useful way to learn more about and summarize the data.
+
+As the dataset outcome is a binary, that is, either diabetes positive or diabetes negative, logistic regression is used to help visualize the relationship between the variables and the logit of the outcome.  
+
+The barplots below give an idea of the proportion of instances that belong to each category.
+
+```{r}
+par(mfrow=c(2,4))
+for(i in 1:8) {
+  counts <- table(mydata[,i])
+  name <- names(mydata)[i]
+  barplot(counts, main=name)
+}
+```
+
+The correlation plot below shows that that the following attributes tend to change together:
+
+- pregnant and age
+- glucose and insulin
+- tricepes and mass
+
+```{r}
+correlations <- cor(mydata[,1:8])
+corrplot(correlations, method="number")
+```
+
+The scatter plot matrix below indicates the relationship between the variables. This aids in looking at the data from multiple perspectives. 
+
+```{r}
+#Scatter plot
+pairs(mydata)
+```
+
+The scatter plot is then smoothed to show clearer relationship between each variable and the logit values.
+
+```{r}
+mydata <- mydata %>%
+  mutate(logit = log(probabilities/(1-probabilities))) %>%
+  gather(key = "predictors", value = "predictor.value", -logit)
+ggplot(mydata, aes(logit, predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") +
+  theme_bw() +
+  facet_wrap(~predictors, scales = "free_y")
+```
+
+The above smoothed scatter plots show that variables glucose, mass, pregnant, pressure and triceps are all quite linearly associated with the diabetes outcome in logit scale.
+
+Cook’s distance is used to examine the extreme values (outliners) in the data. Below is the identified top 3 outliners.
+
+```{r}
+plot(model, which = 4, id.n = 3)
+```
+
+Further details of the top 3 outliners are shown as follow:
+  
+```{r}
+model.data <- augment(model) %>%
+  mutate(index = 1:n())
+model.data %>% top_n(3, .cooksd)
+```
+
+Although outliners may impact the quality of the logistic regression analysis, not all of them are influential observations. To check if the data contains potential influential observations, the standardized error of residuals is inspected. The standardized residuals are plotted as below.
+
+```{r}
+ggplot(model.data, aes(index, .std.resid)) +
+  geom_point(aes(color = diabetes), alpha = .5) +
+  theme_bw()
+
+```
+
+
+The filter below is used to identify if there are any influential data points with abs (.std.res) > 3.
+
+```{r}
+model.data %>%
+  filter(abs(.std.resid) > 3)
+```
+
+The above analysis indicates that there is no influential observation in the data.
+
+Multicollinearity corresponds to a situation where the data contains highly correlated predictor variables and should be removed in regression analysis. The R function *vif()* is used to identiy such situation, and a value that exceeds 5 indicates a problematic amount of collinearity. 
+
+```{r}
+car::vif(model)
+```
+
+As all variables show a VIF value of well below 5, there is no collinearity.
+
+
+## V. Build LDA Model
+
+The linear discriminant analysis model is used to predict the probability of diabetes test positively based on clinical variables.
+
+The PimaIndiansDiabetes2 dataset is split into training set (75% used to build the model) and test set (25% used to evaluate the model performance).
+
+```{r}
+pima.data <- na.omit(PimaIndiansDiabetes2)
+# Inspect the data
+# Split the data into training and test set
+set.seed(123)
+training.samples <- pima.data$diabetes %>%
+  createDataPartition(p=0.75, list=FALSE)
+train.data <- pima.data[training.samples, ]
+test.data <- pima.data[-training.samples, ]
+```
+
+
+## VI. Make Prediction
+
+The LDA model is fitted on the training set and make predictions on the test set.
+
+```{r}
+# Fit LDA
+fit <- lda(diabetes ~., data = train.data)
+# Make predictions on the test data
+predictions <- predict(fit, test.data)
+prediction.probabilities <- predictions$posterior[,2]
+predicted.classes <- predictions$class
+observed.classes <- test.data$diabetes
+```
+
+```{r}
+accuracy <- mean(observed.classes == predicted.classes)
+accuracy
+```
+
+```{r}
+error <- mean(observed.classes != predicted.classes)
+error
+```
+
+From the output above, the LDA Model correctly predicted the individual outcome in 86.6% of the cases, whereas the misclassification error rate (Type I Error and Type II Error) is low at 13.4%.
+
+
+## VI. Examine Prediction Accuracy
+
+Two metrics are used to examine the performance of the LDA Model:
+
+Sensitivity – which is the True Positive Rate or the proportion of identified positives among the diabetes-positive population. 
+
+Specificity – which is  the True Negative Rate or the proportion of identified negatives among the diabetes-negative population.
+
+*Sensitivity* and *Specificity* are computed using the function confusionMatrix().
+
+
+```{r}
+# Confusion matrix, proportion of cases
+table(observed.classes, predicted.classes) %>%
+  prop.table() %>% round(digits = 3)
+```
+
+```{r}
+confusionMatrix(predicted.classes, observed.classes,
+                positive = "pos")
+```
+
+From the output above, the Sensitivity is high at 75%, that is, 75% of diabetes-positive individuals are correctly identified by the model as diabetes-positive. On the other hand, the Specificity is also high at 92.3%, that is, 92.3% of diabetes-negative individuals are correctly identified by the model as diabetes-negative.
+
+
+## VIII. Conclusion
+
+As the LDA model correctly predicts the individual outcome in **86.6%** of the cases, and the misclassification error rate (Type I Error and Type II Error) is low at **13.4%**. Furthermore, both the Sensitivity (True Positive Rate) and the Specificity (True Negative Rate) of the model are high at **75%** and **92.3%**, respectively. Therefore, it is concluded this LDA model is likely a reliable prediction model for the PimaIndiansDiabetes2 dataset.
+
+
+
